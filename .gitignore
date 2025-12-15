@@ -28,6 +28,9 @@ dist/
 # Database files
 data/memory.db
 
+# Models directory (ignore model files and weights)
+models/
+
 # Test / coverage
 .pytest_cache/
 .coverage
