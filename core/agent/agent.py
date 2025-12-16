@@ -2,8 +2,9 @@ from core.agent.context import AgentContext
 from core.agent.router import IntentRouter
 from core.llm.gemini_client import GeminiClient
 from core.llm.llama_client import LlamaClient
+from core.memory.sqlite_memory import SQLiteMemory
+from core.memory.memory_service import MemoryService
 from pathlib import Path
-
 
 class Agent:
     def __init__(self):
@@ -14,6 +15,7 @@ class Agent:
 
         # Prefer explicit expected path, but try to auto-detect variants
         default_path = Path("models/mistral/mistral-7b-instruct.Q4_K_M.gguf")
+        self.memory = MemoryService(SQLiteMemory())
         model_path = str(default_path)
 
         if not default_path.exists():
@@ -28,23 +30,30 @@ class Agent:
         )
 
     def handle(self, user_input: str) -> str:
-        self.context.add("User", user_input)
         intent = self.router.route(user_input)
 
+        if intent == "STORE_MEMORY":
+            fact = user_input.replace("recuerda que", "").strip()
+            # normalize leading phrases like 'me gusta ...'
+            self.memory.remember(fact)
+            return "Listo. Lo recordaré."
+
+        if intent == "RECALL_MEMORY":
+            # pass the full user query to recall so MemoryService can decide what to fetch
+            recalled = self.memory.recall(user_input)
+            if recalled:
+                return f"Esto es lo que recuerdo:\n{recalled}"
+            else:
+                return "No recuerdo nada relevante todavía."
+
+        self.context.add("User", user_input)
+
         if intent == "THINK":
-            prompt = (
-                "Responde de forma clara y concisa.\n\n"
-                + self.context.get_context()
-            )
-            response = self.thinker.generate(prompt)
+            response = self.thinker.generate(self.context.get_context())
         else:
-            prompt = (
-                "Eres un agente que estructura acciones.\n"
-                "No expliques, solo indica qué acción realizar.\n\n"
-                + self.context.get_context()
-            )
-            response = self.operator.generate(prompt)
+            response = self.operator.generate(self.context.get_context())
 
         self.context.add("Agent", response)
         return response
+
 
