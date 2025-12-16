@@ -27,7 +27,7 @@ class IntentRouter:
         if re.search(r"que\s+.+\s+me\s+gusta", lowered) or re.search(r"qué\s+.+\s+me\s+gusta", lowered):
             return "RECALL_MEMORY"
 
-        operate_triggers = ["pon", "reproduce", "abre", "enciende"]
+        operate_triggers = ["pon", "reproduce", "pausa", "siguiente", "skip"]
 
         if any(trigger in lowered for trigger in operate_triggers):
             return "OPERATE"

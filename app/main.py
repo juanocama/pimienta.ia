@@ -11,8 +11,11 @@ from core.agent.agent import Agent
 from services.voice.speaker_service import VoiceService
 from services.voice.listener_service import ListenerService
 
+
 def main():
     agent = Agent()
+
+    # Crear servicios UNA sola vez
     voice = VoiceService(voice_index=0)
     listener = ListenerService()
 
@@ -25,15 +28,25 @@ def main():
 
         print(f"Tú: {text}")
 
-        if "salir" in text.lower():
+        if text.lower().strip() == "salir":
             break
 
-        response = agent.handle(text)
+        try:
+            response = agent.handle(text)
+
+            # Verificar si la respuesta está vacía o es None
+            if not response:
+                response = "Lo siento, no entendí bien eso. ¿Puedes repetirlo?"
+
+        except Exception as e:
+            response = f"Ocurrió un error interno: {e}"
+
+        # 🔊 REGLA DE ORO: si hay respuesta, SIEMPRE hablar
         print(f"Pimienta: {response}")
         voice.speak(response)
 
+
 if __name__ == "__main__":
     main()
-
 
 
