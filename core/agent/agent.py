@@ -33,7 +33,10 @@ class Agent:
         intent = self.router.route(user_input)
 
         if intent == "STORE_MEMORY":
-            fact = user_input.replace("recuerda que", "").strip()
+            # remove leading phrases like 'recuerda que' or 'recuerda' (case-insensitive)
+            import re
+
+            fact = re.sub(r'^(recuerda\s+que|recuerda)\s*', '', user_input, flags=re.I).strip()
             # normalize leading phrases like 'me gusta ...'
             self.memory.remember(fact)
             return "Listo. Lo recordaré."

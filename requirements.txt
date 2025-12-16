@@ -1,4 +1,7 @@
 google-generativeai
 python-dotenv
 llama-cpp-python
+SpeechRecognition
+pyttsx3
+pyaudio
 
