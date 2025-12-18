@@ -41,3 +41,6 @@ data/
 # System
 Thumbs.db
 
+# Spotify cache
+.spotify_cache
+
