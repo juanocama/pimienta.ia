@@ -1,36 +1,87 @@
 import re
+from core.agent.mode import AgentMode
 
 
 class IntentRouter:
-    def route(self, text: str) -> str:
+    """
+    Decide QUÉ quiere hacer el usuario (intent)
+    y CÓMO debe manejarse el mensaje (mode).
+    """
+
+    # -------------------------------------------------
+    # MODE ROUTING (alto nivel)
+    # -------------------------------------------------
+    def route_mode(self, text: str) -> AgentMode:
+        """
+        Decide si el input es:
+        - COMMAND: acción directa (Spotify, etc.)
+        - THINK: razonamiento explícito
+        - CONVERSATION: charla normal
+        """
         lowered = text.lower()
 
-        if lowered.startswith("recuerda que"):
+        # Comandos directos (no requieren LLM conversacional)
+        if any(w in lowered for w in (
+            "pausa", "pause", "pausar",
+            "pon", "reproduce", "reproducir", "play",
+            "siguiente", "next", "skip",
+            "continúa", "continuar", "reanuda", "resume"
+        )):
+            return AgentMode.COMMAND
+
+        # Peticiones explícitas de razonamiento
+        if any(w in lowered for w in (
+            "piensa", "analiza", "razona", "reflexiona"
+        )):
+            return AgentMode.THINK
+
+        return AgentMode.CONVERSATION
+
+    # -------------------------------------------------
+    # INTENT ROUTING (detalle)
+    # -------------------------------------------------
+    def route(self, text: str) -> str:
+        """
+        Devuelve el intent lógico para el Agent.
+        """
+        lowered = text.lower().strip()
+
+        # -------- MEMORY STORE --------
+        if lowered.startswith("recuerda que") or lowered.startswith("recuerda"):
             return "STORE_MEMORY"
 
-        # Broad recall detection: common phrases and patterns
+        # -------- MEMORY RECALL --------
         recall_triggers = [
-            "que me gusta",
+            "qué recuerdas",
+            "que recuerdas",
             "qué me gusta",
+            "que me gusta",
             "mis gustos",
-            "recuerda",
-            "mi nombre",
             "mis preferencias",
-            "me gusta",
+            "mi nombre",
+            "recuerdas algo",
+            "recuerda algo",
             "gustos",
         ]
 
         if any(trigger in lowered for trigger in recall_triggers):
             return "RECALL_MEMORY"
 
-        # Also accept patterns like 'que <palabra> me gusta' (e.g. 'que musica me gusta')
-        if re.search(r"que\s+.+\s+me\s+gusta", lowered) or re.search(r"qué\s+.+\s+me\s+gusta", lowered):
+        # Patrones tipo: "qué música me gusta"
+        if re.search(r"qué\s+.+\s+me\s+gusta", lowered) or \
+           re.search(r"que\s+.+\s+me\s+gusta", lowered):
             return "RECALL_MEMORY"
 
-        operate_triggers = ["pon", "reproduce", "pausa", "siguiente", "skip"]
+        # -------- OPERATE (fallback por intent) --------
+        operate_triggers = [
+            "pon", "reproduce", "reproducir",
+            "pausa", "pause", "pausar",
+            "siguiente", "skip", "next",
+            "continúa", "reanuda"
+        ]
 
         if any(trigger in lowered for trigger in operate_triggers):
             return "OPERATE"
 
+        # -------- DEFAULT --------
         return "THINK"
-

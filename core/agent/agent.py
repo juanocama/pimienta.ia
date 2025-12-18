@@ -105,6 +105,21 @@ class Agent:
         # ---------- CONTEXT ----------
         self.context.add("user", user_input)
 
+        # ---------- MUSIC PREFERENCES ----------
+        lowered = user_input.lower()
+        if lowered.startswith("recuerda que me gusta"):
+            preference = re.sub(
+                r"^recuerda\s+que\s+me\s+gusta\s*",
+                "",
+                user_input,
+                flags=re.I
+            ).strip()
+            self.memory.remember({
+                "type": "music_preference",
+                "value": preference
+            })
+            return f"Perfecto, recordaré que te gusta {preference} 🎵"
+
         # ---------- THINK ----------
         if intent == "THINK":
             response = self.thinker.generate(self.context.get_context())
@@ -113,8 +128,6 @@ class Agent:
 
         # ---------- OPERATE (FAST PATH) ----------
         if intent == "OPERATE":
-            lowered = user_input.lower()
-
             if any(w in lowered for w in ("pausa", "pause", "pausar", "detén", "detener")):
                 cmd = "pause"
             elif any(w in lowered for w in ("continúa", "continuar", "reanuda", "resume")):
@@ -154,6 +167,3 @@ class Agent:
 
         self.context.add("assistant", result)
         return result
-
-
-
