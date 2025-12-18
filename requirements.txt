@@ -6,5 +6,9 @@ pyttsx3
 pyaudio
 spotipy
 python-dotenv
+edge-tts
+sounddevice
+numpy
+pygame
 
 

@@ -28,12 +28,11 @@ dist/
 # Database files
 data/memory.db
 
-# Models directory
+# Models directory (Mistral/LLaMA models)
 models/
 
 # Data directory
 data/
-
 
 # Test / coverage
 .pytest_cache/
