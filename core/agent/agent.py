@@ -1,34 +1,51 @@
-
 from pathlib import Path
 import re
 
 from core.agent.context import AgentContext
 from core.agent.router import IntentRouter
+
 from core.llm.gemini_client import GeminiClient
 from core.llm.llama_client import LlamaClient
+
 from core.memory.sqlite_memory import SQLiteMemory
 from core.memory.memory_service import MemoryService
+
 from core.planner.llama_planner import LlamaPlanner
+
 from core.actions.action_registry import ActionRegistry
 from core.actions.spotify_action import SpotifyAction
 from core.actions.talk import TalkAction
 
+from core.personality.personality_service import PersonalityService
+from core.personality.prompt_builder import build_personality_prompt
+
 
 class Agent:
     def __init__(self):
+        # ---------- CONTEXT ----------
         self.context = AgentContext()
+
+        # ---------- ROUTER / THINKER ----------
         self.router = IntentRouter()
         self.thinker = GeminiClient()
+
+        # ---------- MEMORY (BEFORE PERSONALITY) ----------
+        self.memory = MemoryService(SQLiteMemory())
+
+        # ---------- PERSONALITY ----------
+        self.personality_service = PersonalityService(self.memory)
+        self.personality = self.personality_service.load()
+
+        # 👉 Personality prompt (SYSTEM)
+        personality_prompt = build_personality_prompt(self.personality)
+        self.context.add("system", personality_prompt)
 
         # ---------- ACTION REGISTRY ----------
         self.actions = ActionRegistry()
         self.actions.register("SPOTIFY", SpotifyAction())
         self.actions.register("TALK", TalkAction())
 
-        # pending action for follow-ups
-        self.pending_action: dict | None = None
-
-        # ---------- LLM ----------
+        # ---------- LLM OPERATOR ----------
         default_path = Path("models/mistral/mistral-7b-instruct.Q4_K_M.gguf")
         model_path = str(default_path)
 
@@ -41,11 +58,11 @@ class Agent:
 
         self.operator = LlamaClient(model_path=model_path)
 
-        # ---------- MEMORY ----------
-        self.memory = MemoryService(SQLiteMemory())
-
         # ---------- PLANNER ----------
         self.planner = LlamaPlanner(self.operator)
+
+        # ---------- FOLLOW-UP ----------
+        self.pending_action: dict | None = None
 
     def handle(self, user_input: str) -> str:
         # ---------- FOLLOW-UP ----------
@@ -86,12 +103,12 @@ class Agent:
             )
 
         # ---------- CONTEXT ----------
-        self.context.add("User", user_input)
+        self.context.add("user", user_input)
 
         # ---------- THINK ----------
         if intent == "THINK":
             response = self.thinker.generate(self.context.get_context())
-            self.context.add("Agent", response)
+            self.context.add("assistant", response)
             return response
 
         # ---------- OPERATE (FAST PATH) ----------
@@ -107,7 +124,6 @@ class Agent:
             else:
                 cmd = "play"
 
-            # Try to extract query
             m = re.search(r"(?:pon|reproduce|reproducir|play)\s+(.*)", lowered)
             query = m.group(1).strip() if m else None
 
@@ -120,7 +136,6 @@ class Agent:
                     }
                 })
 
-            # No query → direct command or follow-up
             if cmd in ("pause", "next"):
                 return self.actions.execute({
                     "action": "SPOTIFY",
@@ -137,7 +152,7 @@ class Agent:
         plan = self.planner.plan(self.context.get_context())
         result = self.actions.execute(plan)
 
-        self.context.add("Agent", result)
+        self.context.add("assistant", result)
         return result
 
 
