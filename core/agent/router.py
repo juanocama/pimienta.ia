@@ -46,6 +46,27 @@ class IntentRouter:
         """
         lowered = text.lower().strip()
 
+        # -------- PRESENTATION --------
+        presentation_triggers = [
+            "quién eres",
+            "quien eres",
+            "preséntate",
+            "presentate",
+            "qué eres",
+            "que eres",
+            "qué puedes hacer",
+            "que puedes hacer",
+            "háblame de ti",
+            "hablame de ti",
+            "cómo te llamas",
+            "como te llamas",
+            "cuál es tu nombre",
+            "cual es tu nombre",
+        ]
+
+        if any(trigger in lowered for trigger in presentation_triggers):
+            return "PRESENTATION"
+
         # -------- MEMORY STORE --------
         if lowered.startswith("recuerda que") or lowered.startswith("recuerda"):
             return "STORE_MEMORY"

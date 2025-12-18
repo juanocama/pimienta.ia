@@ -19,7 +19,7 @@ def main():
     voice = VoiceService(voice_index=0)
     listener = ListenerService()
 
-    print("🎙️ Pimienta está lista. Di 'salir' para terminar.")
+    print("🎙️ Pimienta está lista. Di 'pimienta' para activarme o 'salir' para terminar.")
 
     while True:
         text = listener.listen()
@@ -29,19 +29,22 @@ def main():
         print(f"Tú: {text}")
 
         if text.lower().strip() == "salir":
+            print("👋 ¡Hasta luego!")
             break
 
         try:
             response = agent.handle(text)
 
-            # Verificar si la respuesta está vacía o es None
-            if not response:
-                response = "Lo siento, no entendí bien eso. ¿Puedes repetirlo?"
+            # ✅ Si la respuesta está vacía, el agente está en modo pasivo
+            # NO hablar ni mostrar mensaje de error
+            if not response or response.strip() == "":
+                continue
 
         except Exception as e:
             response = f"Ocurrió un error interno: {e}"
+            print(f"❌ Error: {e}")
 
-        # 🔊 REGLA DE ORO: si hay respuesta, SIEMPRE hablar
+        # 🔊 Solo hablar si hay respuesta válida
         print(f"Pimienta: {response}")
         voice.speak(response)
 
