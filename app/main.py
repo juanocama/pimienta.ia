@@ -1,7 +1,6 @@
 from pathlib import Path
 import sys
 
-# Ensure project root is on sys.path so local packages like `core` can be imported
 ROOT = Path(__file__).resolve().parents[1]
 root_str = str(ROOT)
 if root_str not in sys.path:
@@ -14,8 +13,6 @@ from services.voice.listener_service import ListenerService
 
 def main():
     agent = Agent()
-
-    # Crear servicios UNA sola vez
     voice = VoiceService(voice_index=0)
     listener = ListenerService()
 
@@ -34,9 +31,6 @@ def main():
 
         try:
             response = agent.handle(text)
-
-            # ✅ Si la respuesta está vacía, el agente está en modo pasivo
-            # NO hablar ni mostrar mensaje de error
             if not response or response.strip() == "":
                 continue
 

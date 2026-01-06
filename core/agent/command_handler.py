@@ -21,13 +21,10 @@ class CommandHandler:
         self.actions = actions
         self.pending_action: dict | None = None
 
+    # -------------------------------------------------
+    # FOLLOW UPS
+    # -------------------------------------------------
     def handle_follow_up(self, user_input: str) -> tuple[bool, str | None]:
-        """
-        Maneja follow-ups de acciones pendientes.
-        
-        Returns:
-            tuple: (had_pending, response)
-        """
         if not self.pending_action:
             return False, None
 
@@ -44,18 +41,45 @@ class CommandHandler:
 
         return True, result
 
+    # -------------------------------------------------
+    # THINK
+    # -------------------------------------------------
     def handle_think(self, user_input: str) -> str:
-        """Procesa con el modelo de pensamiento (Gemini)"""
         self.context.add("user", user_input)
         response = self.thinker.generate(self.context.get_context())
         self.context.add("assistant", response)
         return response
 
+    # -------------------------------------------------
+    # OPERATE (SPOTIFY)
+    # -------------------------------------------------
     def handle_operate(self, user_input: str) -> str:
-        """Maneja comandos de operación (principalmente Spotify)"""
-        lowered = user_input.lower()
+        lowered = user_input.lower().strip()
 
-        # Determinar comando
+        # ---------- PASO 13: COMANDOS DIRECTOS DJ / LIKED ----------
+        if any(p in lowered for p in (
+            "música que me gusta",
+            "musica que me gusta",
+            "mis me gusta",
+            "mis gustos musicales"
+        )):
+            return self.actions.execute({
+                "action": "SPOTIFY",
+                "params": {"command": "play_liked"}
+            })
+
+        if any(p in lowered for p in (
+            "activa al dj",
+            "activa el dj",
+            "pon al dj",
+            "modo dj"
+        )):
+            return self.actions.execute({
+                "action": "SPOTIFY",
+                "params": {"command": "play_dj"}
+            })
+
+        # ---------- COMANDOS CLÁSICOS ----------
         if any(w in lowered for w in ("pausa", "pause", "pausar", "detén", "detener")):
             cmd = "pause"
         elif any(w in lowered for w in ("continúa", "continuar", "reanuda", "resume")):
@@ -65,11 +89,11 @@ class CommandHandler:
         else:
             cmd = "play"
 
-        # Extraer query
+        # ---------- EXTRAER QUERY ----------
         m = re.search(r"(?:pon|reproduce|reproducir|play)\s+(.*)", lowered)
         query = m.group(1).strip() if m else None
 
-        # Ejecutar con query
+        # ---------- EJECUTAR ----------
         if query:
             return self.actions.execute({
                 "action": "SPOTIFY",
@@ -79,22 +103,23 @@ class CommandHandler:
                 }
             })
 
-        # Comandos directos sin query
         if cmd in ("pause", "next"):
             return self.actions.execute({
                 "action": "SPOTIFY",
                 "params": {"command": cmd}
             })
 
-        # Solicitar query
+        # ---------- FOLLOW UP ----------
         self.pending_action = {
             "action": "SPOTIFY",
             "params": {"command": cmd}
         }
         return "¿Qué quieres escuchar?"
 
+    # -------------------------------------------------
+    # PLAN
+    # -------------------------------------------------
     def handle_plan(self, user_input: str) -> str:
-        """Planifica y ejecuta acciones complejas"""
         self.context.add("user", user_input)
         plan = self.planner.plan(self.context.get_context())
         result = self.actions.execute(plan)

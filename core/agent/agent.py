@@ -37,7 +37,7 @@ class Agent:
         # ---------- PERSONALITY ----------
         self.personality_service = PersonalityService(self.memory)
         self.personality = self.personality_service.load()
-        
+
         personality_prompt = build_personality_prompt(self.personality)
         self.context.add("system", personality_prompt)
 
@@ -79,30 +79,27 @@ class Agent:
     def _get_presentation(self) -> str:
         """Devuelve la presentación del agente basada en su personalidad"""
         p = self.personality
-        
-        # Construcción de presentación personalizada
-        intro = f"¡Hola! Soy {p.name}, tu asistente de ia con voz, tengo instruido ser directa y bromear"
-        capabilities = []
-        capabilities.append("Controlar tu música de Spotify")
-        capabilities.append("Recordar tus gustos y preferencias")
-        capabilities.append("Conversar contigo de forma natural")
-        capabilities.append("Ayudarte con tareas y recordatorios")
-        
+
+        intro = (
+            f"¡Hola! Soy {p.name}, tu asistente de IA con voz. "
+            "Soy directa, eficiente y con un toque de humor."
+        )
+
+        capabilities = [
+            "Controlar tu música de Spotify",
+            "Recordar tus gustos y preferencias",
+            "Conversar contigo de forma natural",
+            "Ayudarte con tareas y recordatorios",
+        ]
+
         capabilities_text = "\n\n¿Qué puedo hacer?\n" + "\n".join(capabilities)
-        
         wake_word_reminder = "\n\nDi 'pimienta' para activarme cuando estoy en modo pasivo 😴"
-        
+
         return intro + capabilities_text + wake_word_reminder
 
     def handle(self, user_input: str) -> str:
         """
         Punto de entrada principal para procesar input del usuario.
-        
-        Args:
-            user_input: Texto del usuario
-            
-        Returns:
-            Respuesta del agente
         """
         # ---------- WAKE WORD ----------
         should_continue, processed_input, immediate_response = \
@@ -115,12 +112,40 @@ class Agent:
             return ""
 
         user_input = processed_input
+        lowered = user_input.lower()
 
         # ---------- FOLLOW-UP ----------
         had_pending, response = self.command_handler.handle_follow_up(user_input)
         if had_pending:
             self.wake_handler.refresh_window()
             return response
+
+        # ==========================================================
+        # PASO 13 — INTERCEPTACIÓN DJ / MÚSICA QUE ME GUSTA (CLAVE)
+        # ==========================================================
+        if any(p in lowered for p in (
+            "música que me gusta",
+            "musica que me gusta",
+            "mis me gusta",
+            "mis gustos musicales"
+        )):
+            self.wake_handler.refresh_window()
+            return self.actions.execute({
+                "action": "SPOTIFY",
+                "params": {"command": "play_liked"}
+            })
+
+        if any(p in lowered for p in (
+            "activa al dj",
+            "activa el dj",
+            "pon al dj",
+            "modo dj"
+        )):
+            self.wake_handler.refresh_window()
+            return self.actions.execute({
+                "action": "SPOTIFY",
+                "params": {"command": "play_dj"}
+            })
 
         # ---------- INTENT ROUTING ----------
         intent = self.router.route(user_input)

@@ -3,60 +3,45 @@ from typing import Optional
 
 
 def _get_spotify_service():
-    # local import to avoid import-time issues and keep dependency optional
     from services.spotify.spotify_service import SpotifyService
     try:
         return SpotifyService()
     except Exception:
-        # If Spotify cannot be initialized (missing credentials), return a no-op shim
         class _FakeSpotify:
-            def play(self):
-                return "[spotify] play (noop)"
-
-            def pause(self):
-                return "[spotify] pause (noop)"
-
-            def next(self):
-                return "[spotify] next (noop)"
-
+            def play(self, *_): return "[spotify noop]"
+            def pause(self): return "[spotify noop]"
+            def next(self): return "[spotify noop]"
+            def play_liked(self): return "[spotify liked noop]"
+            def play_dj(self): return "[spotify dj noop]"
         return _FakeSpotify()
 
 
 class SpotifyAction(BaseAction):
     def __init__(self, spotify_service: Optional[object] = None):
-        # Allow injecting a SpotifyService instance for testing or reuse.
-        if spotify_service is None:
-            spotify_service = _get_spotify_service()
-        self.spotify = spotify_service
+        self.spotify = spotify_service or _get_spotify_service()
 
     def execute(self, params: dict) -> str:
         command = params.get("command")
         query = params.get("query")
 
-        if command == "play":
-            # if spotify service implements play(query), pass the query
-            try:
-                if query:
-                    self.spotify.play(query)
-                    return f"🎵 Reproduciendo: {query}"
-                else:
-                    self.spotify.play()
-                    return "🎵 Reproduciendo música en Spotify."
-            except Exception:
-                return "No pude reproducir en Spotify (verifica configuración)."
+        try:
+            if command == "play":
+                return self.spotify.play(query)
 
-        if command == "pause":
-            try:
-                self.spotify.pause()
-                return "⏸ Música pausada."
-            except Exception:
-                return "No pude pausar la reproducción."
+            if command == "pause":
+                return self.spotify.pause()
 
-        if command == "next":
-            try:
-                self.spotify.next()
-                return "⏭ Siguiente canción."
-            except Exception:
-                return "No pude saltar a la siguiente canción."
+            if command == "next":
+                return self.spotify.next()
 
-        return "No entendí qué hacer con Spotify."
+            if command == "play_liked":
+                return self.spotify.play_liked()
+
+            if command == "play_dj":
+                return self.spotify.play_dj()
+
+        except Exception:
+            return "No pude controlar Spotify."
+
+        return "Comando de Spotify no reconocido."
+
