@@ -10,5 +10,8 @@ edge-tts
 sounddevice
 numpy
 pygame
+py-trello 
+python-dateutil 
+dateparser
 
 

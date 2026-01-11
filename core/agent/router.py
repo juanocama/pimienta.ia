@@ -104,5 +104,38 @@ class IntentRouter:
         if any(trigger in lowered for trigger in operate_triggers):
             return "OPERATE"
 
+        # -------- TRELLO QUERIES --------
+        trello_query_triggers = [
+            "qué tengo hoy",
+            "que tengo hoy",
+            "pendientes de hoy",
+            "pendientes hoy",
+            "tareas de hoy",
+            "qué tengo mañana",
+            "que tengo mañana",
+            "pendientes esta semana",
+            "resumen del día",
+            "resumen de hoy"
+        ]
+
+        if any(trigger in lowered for trigger in trello_query_triggers):
+            return "TRELLO_QUERY"
+
+        # -------- TRELLO ACTIONS --------
+        trello_action_triggers = [
+            "agregar tarea",
+            "crear tarea",
+            "nueva tarea",
+            "recordatorio",
+            "agregar recordatorio",
+            "completar tarea",
+            "marcar tarea",
+            "marcar hábito",
+            "completar hábito"
+        ]
+
+        if any(trigger in lowered for trigger in trello_action_triggers):
+            return "TRELLO_ACTION"
+
         # -------- DEFAULT --------
         return "THINK"

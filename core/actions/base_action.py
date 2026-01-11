@@ -4,3 +4,6 @@ class Action(ABC):
     @abstractmethod
     def execute(self, params: dict) -> str:
         pass
+
+# Backwards-compatible alias
+BaseAction = Action

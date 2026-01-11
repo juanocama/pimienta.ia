@@ -17,6 +17,9 @@ class Settings:
     SPOTIFY_CLIENT_ID = os.getenv("SPOTIFY_CLIENT_ID")
     SPOTIFY_CLIENT_SECRET = os.getenv("SPOTIFY_CLIENT_SECRET")
     SPOTIFY_REDIRECT_URI = os.getenv("SPOTIFY_REDIRECT_URI")
+    TRELLO_API_KEY = os.getenv("TRELLO_API_KEY")
+    TRELLO_API_TOKEN = os.getenv("TRELLO_API_TOKEN")
+    TRELLO_BOARD_ID = os.getenv("TRELLO_BOARD_ID")
 
 
 settings = Settings()
